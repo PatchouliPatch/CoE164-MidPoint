@@ -27,7 +27,7 @@ impl VarPredictor {
     /// The coefficients are computed using the Levinson-Durbin algorithm.
     pub fn dot(autoc: &Vec <f64> , other: &Vec <f64>) -> Vec <f64> {
         autoc.vec.into_iter().zip(other.vec).fold(0_f64, |acc, elm| acc + (elm.0 * elm.1))
-    }
+    }// i just used the raytracer programs dot product from 163
 
     pub fn get_predictor_coeffs(autoc: &Vec <f64>, predictor_order: u32) -> Vec <f64> {
         let mut data_store = Vec::<f64>::new();
