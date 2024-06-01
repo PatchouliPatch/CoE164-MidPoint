@@ -1,0 +1,42 @@
+start addr     byte aligned value data
+(hex)          (hex)              (any)
+------------------------------------------
+      00       66 4C 61 43        fLaC
+      04 + 0b  80                 1 as this is the last meta block
+      04 + 1b                     0x0 as this is a STREAMINFO block
+      05       00 00 22           metablock has 34 byte-length
+      08                          min block size
+      0A                          max block size
+      0C                          min frame size
+      0F                          max frame size
+      12       0A C4 42           44100 Hz (0xac44 - 20 bits) sample rate
+      14 + 4b                     2 channels (0b001 - 3 bits)
+      14 + 7b  F0                 16 bit sample size (0b01111 - 5 bits)
+      15 + 4b  00 00 00 01        1 inter-channel sample
+      1A       3E 84 B4 18        16-byte MD5 hash
+               07 DC 69 03
+               07 58 6A 3D
+               AD 1A 2E 0F
+      2A       FF F8              sync code
+      2B + 6b                     mandatory 0 bit
+      2B + 7b                     0 as this has a fixed block size
+      2C       60                 8-bit block size (0b0110 - 4 bits)
+      2C + 4b                     sample rate from STREAMINFO (0b0 - 4 bits)
+      0D       10                 2 channels (0b0001 - 4 bits)
+      0D + 4b                     sample size from STREAMINFO (0b0 - 3 bits)
+      0D + 7b                     mandatory 0 bit
+      2E       00                 UTF-8 frame index 0
+      2F       00                 Block size 1 (0x0 - 8 bits)
+      30       48                 CRC-8 polynomial of audio frame index 0
+      31       03                 mandatory 0 bit
+      31 + 1b                     VERBATIM audio frame type (0b000001 - 6 bits)
+      31 + 7b                     1 as this subframe has wasted bits
+      32       58 FD              2 wasted bits (01 in unary - 2 bits)
+                                  sample 0x63F4 (0b01_1000_1111_1101 - 14 bits)
+      34       03                 mandatory 0 bit
+      34 + 1b                     VERBATIM audio frame type (0b000001 - 6 bits)
+      34 + 7b                     1 as this subframe has wasted bits
+      35       12                 4 wasted bits (0001 in unary - 4 bits)
+      35 + 4b  8B                 sample 0x63F4 (0b0010_1000_1011 - 12 bits)
+      37       ED 00              CRC-16 polynomial of audio frame index 0
+      
