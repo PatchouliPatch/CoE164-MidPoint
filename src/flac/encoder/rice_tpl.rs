@@ -1,5 +1,5 @@
 use std::ops::{Shl, Shr};
-use crate::flac::bitstream;
+//use crate::flac::bitstream;
 
 /// Represents a Rice encoder
 ///
@@ -26,14 +26,21 @@ pub struct RiceEncodedStream {
 impl RiceEncoderOptions {
     /// Create a builder to the Rice encoder
     pub fn new(num_samples: u64, predictor_order: u8) -> Self {
-        todo!()
+
+        Self {
+            num_samples: num_samples,
+            predictor_order: predictor_order
+        }
+
     }
 
     /// Get the minimum partition order
     /// 
     /// The default minimum partition order is zero
     fn min_rice_partition_order() -> u8 {
-        todo!()
+        
+        0
+
     }
 
     /// Get the maximum partition order
@@ -44,7 +51,37 @@ impl RiceEncoderOptions {
     /// have a partition order of 0 as the number of partitions should be
     /// a power of two.
     fn max_rice_partition_order(mut block_size: u64) -> u8 {
-        todo!()
+
+        if block_size & 2 == 2 {
+            return 2;
+        }
+
+        if block_size & 4 == 4 {
+            return 4;
+        }
+
+        if block_size & 8 == 8 {
+            return 8;
+        }
+
+        if block_size & 16 == 16 {
+            return 16;
+        }
+
+        if block_size & 32 == 32 {
+            return 32;
+        }
+
+        if block_size & 64 == 64 {
+            return 64;
+        }
+
+        if block_size & 128 == 128 {
+            return 128;
+        }
+
+        return 1; // odd numbers
+
     }
 
     /// Compute the best partition order and best Rice parameters for each partition
@@ -52,7 +89,8 @@ impl RiceEncoderOptions {
     /// The best partition order is computed based on the order that yields the minimum
     /// total number of bits of the resulting Rice encoding.
     fn best_partition_and_params(&self, residuals: &Vec <i64>) -> (Vec <u8>, u8) {
-        todo!()
+        
+        
     }
 
     /// Compute the best Rice parameters for some partition of the residuals
@@ -72,8 +110,29 @@ impl RiceEncoderOptions {
     /// Returns `None` if a best parameter cannot be found for any partition. This
     /// arises usually if the predictor order is larger than the amount of residuals
     /// in a partition.
+    
     fn best_parameters(&self, partition_order: u8, residuals: &Vec <i64>) -> Option <(Vec <u8>, u64)> {
-        todo!()
+        
+        if partition_order as usize > residuals.len() {
+            return None;
+        }
+
+        let mut abs_r_mean: u64 = 0;
+        let mut best_partition_order: Vec<u8> = Vec::new();
+
+        for i in residuals.iter() {
+            abs_r_mean += i.abs() as u64;
+            let x: u64 = Self::zigzag(*i);
+            best_partition_order.push(Self::max_rice_partition_order(x));
+        }
+
+        let logable_r_mean: f64 = abs_r_mean as f64;
+        let sizeof_residuals: f64 = residuals.len() as f64;
+        let parameter_M: f64 = (logable_r_mean - 1.0).log(2.0) - sizeof_residuals.log(2.0) + 1.0;
+        let returnable_M: u64 = parameter_M as u64;
+
+        return Some((best_partition_order, returnable_M));
+        
     }
 
     /// Find the exact total number of bits needed to represent a Rice-encoded
@@ -103,7 +162,36 @@ impl RiceEncoderOptions {
     /// Note that the contents are _not_ ensured to be byte-aligned. Hence, this method returns
     /// the Rice-encoded byte vector containing the number of extra unused bits at the last element.
     pub fn encode(rice_param: u8, residuals: &Vec <i64>) -> RiceEncodedStream {
-        todo!()
+
+        /*
+        
+        pub struct RiceEncodedStream {
+            pub stream: Vec <u8>,
+            pub param: u8,
+            pub extra_bits_len: u8,
+        }
+
+        */
+
+        // use zigzag encoding to make all residuals non-negative
+
+        let absolute_residuals: Vec<u64> = Vec::new();
+        for i in residuals.iter() {
+            absolute_residuals.push(Self::zigzag(*i));
+        }
+
+        /// S = residual[i]
+        /// M = Rice Parameter
+        /// log_2 (M) = K bits needed to represent B
+        /// Evaluate U = S >> K and save result as unary
+        /// B = S & (M - 1) and represent in binary padded to the left with zeros until length K
+        /// Rice(S) = (U << K) | B, or U and B concatenated together;
+        
+        // Step 1: Get Rice Parameter M
+
+        let data_store = Self::best_parameters(Self::RiceEncoderOptions,0, residuals);
+        let rice_param: u64 = data_store[1];
+
     }
 
     /// Encode residuals into a partitioned Rice-encoded stream
@@ -125,8 +213,11 @@ impl RiceEncoderOptions {
 
     /// Convert an integer into its zigzag encoding. With this encoding, all
     /// positive numbers are even and all negative numbers are odd.
-    pub fn zigzag(num: i64) -> u64 {
-        todo!()
+    pub fn zigzag(num: i64) -> u64 { // followed the formula over at https://docs.rs/residua-zigzag/latest/zigzag/
+        
+        let q = (num >> 63) ^ (num << 1); 
+        return q as u64;
+
     }
 }
 
@@ -174,4 +265,8 @@ mod tests {
         assert_eq!(rice_enc_stream.stream, out_vec_ans);
         assert_eq!(rice_enc_stream.extra_bits_len, 1);
     }
+}
+
+fn main() {
+
 }
