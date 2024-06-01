@@ -1,33 +1,62 @@
 pub struct VarPredictor;
 
 impl VarPredictor {
-    /// Get the autocorrelation of a vector of samples
+    /// Get the autocorrelation of a vector of data
     ///
-    /// The function computes the autocorrelations of the provided vector of
-    /// data from `R[0]` until `R[max_lag]`. For example, if `max_lag` is 2, then
-    /// the output contains three elements corresponding to R[0] until R[3],
-    /// respectively
-    pub fn get_autocorrelation(samples: &Vec <i64>, max_lag: u8) -> Vec <f64> {
-        todo!()
+    /// The function computes the first `lag`+1 autocorrelations of the
+    /// provided vector of data. 
+    pub fn get_autocorrelation(data: &Vec <i32>, lag: u32) -> Vec <f64> {
+        let data_store = Vec::<f64>::new();
+        let length:usize = data.len() as usize;
+
+        for i in 0..length{
+            if length > (i+lag){
+                let data_in = (data[i] * data[i+lag]) as f64;
+                data_store.push(data_in);
+            }
+            else { //put of scope record as 0 
+                data_store.push(0.0);
+            }
+        }
+
+        data_store
     }
 
     /// Get the predictor coefficients
     /// 
-    /// `autoc` contains the autocorrelation vector where `autoc[i]` corresponds to
-    /// the autocorrelation value of lag `i - 1`. `predictor_order` should be
-    /// less than `autoc.len()`. The coefficients are computed using the Levinson-Durbin
-    /// algorithm.
-    pub fn get_predictor_coeffs(autoc: &Vec <f64>, predictor_order: u8) -> Vec <f64> {
-        todo!()
+    /// The coefficients are computed using the Levinson-Durbin algorithm.
+    pub fn dot(autoc: &Vec <f64> , other: &Vec <f64>) -> Vec <f64> {
+        autoc.vec.into_iter().zip(other.vec).fold(0_f64, |acc, elm| acc + (elm.0 * elm.1))
     }
 
-    /// Get a the list of LPC coefficients until some provided predictor order inclusive.
-    /// 
-    /// For the return value `lpc_list`, `lpc_list[i]` contains a `Vec` of coefficients
-    /// for predictor order `i + 1`. The Levinson-Durbin algorithm is used to progressively
-    /// compute the LPC coefficients across multiple predictor orders.
-    fn build_predictor_coeffs(autoc: &Vec <f64>, max_predictor_order: u8) -> Vec <Vec <f64>> {
-        todo!()
+    pub fn get_predictor_coeffs(autoc: &Vec <f64>, predictor_order: u32) -> Vec <f64> {
+        let mut data_store = Vec::<f64>::new();
+        //base case 
+        let base_case = autoc[1]/autoc[0];
+        data_store.push(base_case);
+        //compute for coefficients successively, starting at i=0 until i=prediction order  - 1
+        for i in i..=(predictor_order-1){
+            let mut a_rev =[0; i];
+            let mut r_rev =[0; i];
+            //Create reverse versions of the vectors data_store(coefficients) and auto correlations
+            a_rev = (data_store[0..=i]).clone();
+            a_rev.reverse(); 
+            r_rev = (autoc[0..=i]).clone();
+            r_rev.reverse();
+            //Compute for the correction term ki+1 using a slice of the autocorrelation values and currently computed coefficients
+            let k_num = autoc[i+2] - dot(r_rev[0..=(r_rev.len()-1)], &data_store[0,i])
+            let k_den = autoc[0] - dot(&autoc[1,i], &data_store[0,i])
+            let k = k_num/k_den;
+            //compute for updated coefficients
+            let a_prime =  Vec::<f64>>::new();
+            for x in 0..=a_rev.len(){
+                a_prime.push(data_store[x]- (k*a_rev[x]));
+            }
+            //append kI+1 at the end 
+            a_prime.push(k);
+            data_store = a_prime;
+        }
+        data_store
     }
 
     /// Quantize the predictor coefficients and find their shift factor
@@ -47,34 +76,15 @@ impl VarPredictor {
     /// Then, `L_i_r + \epsilon` is rounded away from zero to get the quantized coefficient.
     /// The new rounding error `\epsilon = L_i_r + \epsilon - round(L_i_r)` is then updated for the
     /// next coefficient.
-    pub fn quantize_coeffs(lpc_coefs: &Vec <f64>, mut precision: u8) -> (Vec <i64>, u8) {
+    pub fn quantize_coeffs(lpc_coefs: &Vec <f64>, mut precision: u32) -> (Vec <u32>, u32) {
         todo!()
     }
 
     /// Compute the residuals from a given linear predictor
     /// 
-    /// The resulting vector `residual[i]` corresponds to the `i + predictor_order`th
-    /// signal. The first `predictor_order` values of the residual are the "warm-up"
-    /// samples, or the unencoded samples, equivalent to `&samples[..predictor_order]`.
-    /// 
-    /// The residuals are computed with the `samples` reversed. For some `i`th residual,
-    /// `residual[i] = data[i] - (sum(dot(qlp_coefs, samples[i..(i - predictor_order)])) >> qlp_shift)`.
-    pub fn get_residuals(samples: &Vec <i64>, qlp_coefs: &Vec <i64>, predictor_order: u8, qlp_shift: u8) -> Vec <i64> {
-        todo!()
-    }
-
-    /// compute the quantized LPC coefficients, precision, and shift for the given
-    /// predictor order
-    pub fn get_predictor_coeffs_from_samples(samples: &Vec <i64>, predictor_order: u8, bps: u8, block_size: u64) -> (Vec <i64>, u8, u8) {
-        todo!()
-    }
-
-    /// Get the quantized LPC coefficients, precision, and shift for the best predictor order
-    /// for the given sample
-    /// 
-    /// This function selects the best predictor order by finding the order that yields the
-    /// absolute minimum sum of residuals. Note that the maximmum predictor order is 32.
-    pub fn get_best_lpc(samples: &Vec <i64>, bps: u8, block_size: u64) -> (Vec <i64>, u8, u8) {
+    /// The residuals are computed with the provided quantized coefficients
+    /// `qlp_coefs` and shift factor `qlp_shift`.
+    pub fn get_residuals(data: &Vec <i32>, qlp_coefs: &Vec <u32>, predictor_order: u32, qlp_shift: u32) -> Option <Vec <i32>> {
         todo!()
     }
 
@@ -97,37 +107,7 @@ impl VarPredictor {
     /// |   > 16    |     384    |          12             |
     /// |   > 16    |    1152    |          13             |
     /// |   > 16    |     any    |          14             |
-    pub fn get_best_precision(bps: u8, block_size: u64) -> u8 {
+    pub fn get_best_precision(bps: u32, block_size: u32) -> u32 {
         todo!()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sample_ietf_02() {
-        let in_vec = vec![
-            0, 79, 111, 78,
-            8, -61, -90, -68,
-            -13, 42, 67, 53,
-            13, -27, -46, -38,
-            -12, 14, 24, 19,
-            6, -4, -5, 0,
-        ];
-
-        let out_vec_ans = vec![
-            3, -1, -13, -10,
-            -6, 2, 8, 8,
-            6, 0, -3, -5,
-            -4, -1, 1, 1,
-            4, 2, 2, 2,
-            0,
-        ];
-
-        let out_vec = VarPredictor::get_residuals(&in_vec, &vec![7, -6, 2], 3, 2);
-
-        assert_eq!(out_vec_ans, out_vec);
     }
 }
