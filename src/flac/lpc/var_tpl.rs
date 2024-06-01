@@ -77,7 +77,45 @@ impl VarPredictor {
     /// The new rounding error `\epsilon = L_i_r + \epsilon - round(L_i_r)` is then updated for the
     /// next coefficient.
     pub fn quantize_coeffs(lpc_coefs: &Vec <f64>, mut precision: u32) -> (Vec <u32>, u32) {
-        todo!()
+        //compute for shift factor first 
+        //we get the maximum absolute value of coefficient 
+        //iterate through lpc_coeffs and get absolute value each 
+        let abs_val = lpc_coefs.iter().fold(0.0_f64, |num1, &num2| num1.max(num2.abs())); //use .fold since they are floating point
+        //floor(lg(max(|L|)) + 1) - 1 = max bits
+        let max_p1 = (abs_val.log2() + 1.0).floor() as u32;
+        let max_bits = max_p1 -1 ;
+        //compute for SF from formula sf = max(floor(pb - 1 - floor(lg(max(|L|))) ), N_SHIFT_BITS)
+        let mut sf = (((precision - 1) - max_bits) as i32);
+
+        //compute new quantized lpc
+        //Initialize a rounding error variable e to zero
+        let mut rounding_error = 0.0 ;
+        let mut quantized = Vec::new();
+        //Compute the quantized coefficient Lraw':
+        //● If sf is negative, Lraw' = L / (1 << |S|)
+        //● Otherwise, if sf is positive, Lraw' = L * (1 << |S|)
+        for &num_coeff in lpc_coefs.iter(){
+            if sf < 0 {
+                let l_raw =coef / (1 << sf.abs());
+            } 
+            else {
+                let l_raw =coef * (1 << sf);
+            }
+            //Compute the true quantized LPC L' with rounding error factored in L' = round(Lraw' + e)
+            let l_quantized = (l_raw + e).round();
+            //update the rounding error 
+            e = e + (l_raw - l_quantized);
+            //push into vec as u32 since output is u32 
+            quantized.push(l_quantized as u32);
+
+        }
+
+        //If sf is negative, set the LPC shift to zero. Otherwise, leave sf as is.
+        if sf < 0 {
+            sf = 0;
+        }
+
+        return (quantized, sf as u32);
     }
 
     /// Compute the residuals from a given linear predictor
@@ -192,5 +230,18 @@ mod tests {
         let out_val = get_best_precision(16, 2304);
 
         assert_eq!(out_val_ans, out_val);
+    }
+
+    #[test] //quantized 
+    fn sample_04() {
+
+        let mut in_val = vec!{ 1.27123, -0.85145, 0.28488};
+        let pb = 6 as u32;
+        let (out_val,sf) = quantize_coeffs(&in_val, pb);
+        
+        assert_eq!(out_val[0], 20);
+        assert_eq!(out_val[1], 13);
+        assert_eq!(out_val[2], 4);
+        assert_eq!(sf, 4);
     }
 }
