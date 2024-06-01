@@ -586,6 +586,100 @@ mod tests {
                         bps: 16,
                     },
                 )),
+            it_invalid_badfmt: (
+                &[
+                    0x00, 0x6d, 0x74, 0x20,
+                    0x10, 0x0, 0x0, 0x0,
+                    0x01, 0x0,
+                    0x02, 0x0,
+                    0x44, 0xac, 0x0, 0x0,
+                    0x10, 0xb1, 0x02, 0x0,
+                    0x04, 0x00, 0x10, 0x0,
+                ],
+                (
+                    true,
+                    PCMWaveFormatChunk {
+                        num_channels: 2,
+                        samp_rate: 44100,
+                        bps: 16,
+                    },
+                )),
+            it_invalid_notpcm: (
+                &[
+                    0x66, 0x6d, 0x74, 0x20,
+                    0x00, 0x0, 0x0, 0x0,
+                    0x01, 0x0,
+                    0x02, 0x0,
+                    0x44, 0xac, 0x0, 0x0,
+                    0x10, 0xb1, 0x02, 0x0,
+                    0x04, 0x00, 0x10, 0x0,
+                ],
+                (
+                    true,
+                    PCMWaveFormatChunk {
+                        num_channels: 2,
+                        samp_rate: 44100,
+                        bps: 16,
+                    },
+                )),    
+        }
+    }
+    #[cfg(test)]
+    mod byte_rate_comp{
+        use super::*;
+        #[test]
+        fn it_works() {
+            let samp_1 = PCMWaveFormatChunk{
+                num_channels: 1,
+                samp_rate: 44100,
+                bps: 16,
+            };
+            let samp_2 = PCMWaveFormatChunk {
+                num_channels: 2,
+                samp_rate: 32000,
+                bps: 8,
+            };
+            let samp_3 = PCMWaveFormatChunk {
+                num_channels: 1,
+                samp_rate: 12000,
+                bps: 4,
+            };
+            let res_1 = samp_1.byte_rate();
+            let res_2 = samp_2.byte_rate();
+            let res_3 = samp_3.byte_rate();
+
+            assert_eq!(res_1, 88200 as u32);
+            assert_eq!(res_2, 64000 as u32);
+            assert_eq!(res_3, 6000 as u32);
+        }
+    }
+    #[cfg(test)] 
+    mod block_align_comp{
+        use super::*;
+        #[test]
+        fn it_works() {
+            let samp_1 = PCMWaveFormatChunk{
+                num_channels: 1,
+                samp_rate: 44100,
+                bps: 16,
+            };
+            let samp_2 = PCMWaveFormatChunk {
+                num_channels: 2,
+                samp_rate: 32000,
+                bps: 8,
+            };
+            let samp_3 = PCMWaveFormatChunk {
+                num_channels: 2,
+                samp_rate: 12000,
+                bps: 4,
+            };
+            let res_1 = samp_1.block_align();
+            let res_2 = samp_2.block_align();
+            let res_3 = samp_3.block_align();
+
+            assert_eq!(res_1, 2);
+            assert_eq!(res_2, 2);
+            assert_eq!(res_3, 1);
         }
     }
 
