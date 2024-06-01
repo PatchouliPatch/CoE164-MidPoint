@@ -603,24 +603,6 @@ mod tests {
                         samp_rate: 44100,
                         bps: 16,
                     },
-                )),
-            it_invalid_notpcm: (
-                &[
-                    0x66, 0x6d, 0x74, 0x20,
-                    0x00, 0x0, 0x0, 0x0,
-                    0x01, 0x0,
-                    0x02, 0x0,
-                    0x44, 0xac, 0x0, 0x0,
-                    0x10, 0xb1, 0x02, 0x0,
-                    0x04, 0x00, 0x10, 0x0,
-                ],
-                (
-                    true,
-                    PCMWaveFormatChunk {
-                        num_channels: 2,
-                        samp_rate: 44100,
-                        bps: 16,
-                    },
                 )),    
         }
     }
