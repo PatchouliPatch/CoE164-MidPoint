@@ -9,16 +9,6 @@ impl VarPredictor {
         let data_store = Vec::<f64>::new();
         let length:usize = data.len() as usize;
 
-        for i in 0..length{
-            if length > (i+lag){
-                let data_in = (data[i] * data[i+lag]) as f64;
-                data_store.push(data_in);
-            }
-            else { //put of scope record as 0 
-                data_store.push(0.0);
-            }
-        }
-
         data_store
     }
 
