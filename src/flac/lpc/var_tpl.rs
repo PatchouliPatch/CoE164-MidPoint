@@ -108,6 +108,89 @@ impl VarPredictor {
     /// |   > 16    |    1152    |          13             |
     /// |   > 16    |     any    |          14             |
     pub fn get_best_precision(bps: u32, block_size: u32) -> u32 {
-        todo!()
+        
+        //bps == bit depth 
+       if bps < 16 {
+            if (2+ (bps/2)) > 1{
+                return (2 + (bps/2)) as u32;
+            }
+            else{
+                return 1 as u32;
+            }
+       }
+       else if bps == 16{
+            match block_size{
+                192 => {
+                    return 7 as u32;
+                }
+                384 => {
+                    return 8 as u32;
+                }
+                576 =>{
+                    return 9 as u32;
+                }
+                1152 =>{
+                    return 10 as u32;
+                }
+                2304 =>{
+                    return 11 as u32;
+                }
+                4608 =>{
+                    return 12 as u32;
+                }
+                _anyval =>{
+                    return 13 as u32;
+                }
+            }
+       }
+       else if bps > 16{
+            match block_size{
+                384 => {
+                    return 12 as u32;
+                }
+                1152 => {
+                    return 13 as u32;
+                }
+                _anyval => {
+                    return 14 as u32;
+                }
+
+            }
+       }
+       else { //invalud
+            return 16 as u32;
+       }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sample_01() {
+        //let in_val = 0;
+        let out_val_ans = 12;
+        let out_val = get_best_precision(17, 384);
+
+        assert_eq!(out_val_ans, out_val);
+    }
+
+    #[test]
+    fn sample_02() {
+        //let in_val = 0x164;
+        let out_val_ans = 6;
+        let out_val = get_best_precision(8, 1152);
+
+        assert_eq!(out_val_ans, out_val);
+    }
+
+    #[test]
+    fn sample_03() {
+        //let in_val = 0x164;
+        let out_val_ans = 11;
+        let out_val = get_best_precision(16, 2304);
+
+        assert_eq!(out_val_ans, out_val);
     }
 }
