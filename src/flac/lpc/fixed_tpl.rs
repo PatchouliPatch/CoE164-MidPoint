@@ -85,6 +85,10 @@ impl FixedPredictor {
 
             1 => {
 
+                if data.len() < 2 {
+                    return None;
+                }
+
                 return_data[0] = 0;
                 for i in 1..return_data.len() {
 
@@ -94,9 +98,11 @@ impl FixedPredictor {
 
             },
             2 => {
-
-                return_data[0] = 0;
-                return_data[1] = 0;
+                if data.len() < 3 {
+                    return None;
+                }
+                //return_data[0] = 0;
+                //return_data[1] = 0;
                 for i in 2..return_data.len() {
 
                     let r = 2 * return_data[i - 1] - return_data[i - 2];
@@ -105,10 +111,13 @@ impl FixedPredictor {
 
             },
             3 => {
+                if data.len() < 4 {
+                    return None;
+                }
 
-                return_data[0] = 0;
-                return_data[1] = 0;
-                return_data[2] = 0;
+                //return_data[0] = 0;
+                //return_data[1] = 0;
+                //return_data[2] = 0;
                 for i in 3..return_data.len() {
 
                     let r = 3 * return_data[i - 1] - 3 * data[i - 2] + data[i - 3];
@@ -117,11 +126,13 @@ impl FixedPredictor {
 
             },
             4 => {
-
-                return_data[0] = 0;
-                return_data[2] = 0;
-                return_data[3] = 0;
-                return_data[4] = 0;
+                if data.len() < 5 {
+                    return None;
+                }
+                //return_data[0] = 0;
+                //return_data[2] = 0;
+                //return_data[3] = 0;
+                //return_data[4] = 0;
                 for i in 4..return_data.len() {
 
                     let r = 4 * data[i - 1] - 6 * data[i - 2] + 4 * data[i - 3] - data[i - 4];
