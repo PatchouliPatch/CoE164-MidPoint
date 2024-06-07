@@ -5,9 +5,25 @@ impl VarPredictor {
     ///
     /// The function computes the first `lag`+1 autocorrelations of the
     /// provided vector of data. 
+    /// The function computes the autocorrelations of the provided vector of
+    /// data from `R[0]` until `R[max_lag]`. For example, if `max_lag` is 2, then
+    /// the output contains three elements corresponding to R[0] until R[3],
+    /// respectively
     pub fn get_autocorrelation(data: &Vec <i32>, lag: u32) -> Vec <f64> {
-        let data_store = Vec::<f64>::new();
-        let length:usize = data.len() as usize;
+        let max_lag = lag as usize;
+        let data_store = vec![0.0; max_lag + 1];
+        if data.len() <= 1 {
+            return data_store;
+        }
+        else {   
+            for i in 0..=lag{
+                let mut sum = 0.0;
+                for x in 0..(data.len() - i ){
+                    sum += data[x] * data[x + i];
+                }
+                data_store[i] = sum / (data.len() - i) as f64;
+            }
+        }
 
         data_store
     }
@@ -15,31 +31,55 @@ impl VarPredictor {
     /// Get the predictor coefficients
     /// 
     /// The coefficients are computed using the Levinson-Durbin algorithm.
-    pub fn dot(autoc: &Vec <f64> , other: &Vec <f64>) -> Vec <f64> {
-        autoc.vec.into_iter().zip(other.vec).fold(0_f64, |acc, elm| acc + (elm.0 * elm.1))
-    }// i just used the raytracer programs dot product from 163
-
     pub fn get_predictor_coeffs(autoc: &Vec <f64>, predictor_order: u32) -> Vec <f64> {
         let mut data_store = Vec::<f64>::new();
         //base case 
         let base_case = autoc[1]/autoc[0];
         data_store.push(base_case);
         //compute for coefficients successively, starting at i=0 until i=prediction order  - 1
-        for i in i..=(predictor_order-1){
-            let mut a_rev =[0; i];
-            let mut r_rev =[0; i];
+        for i in 0..=(predictor_order-1){
             //Create reverse versions of the vectors data_store(coefficients) and auto correlations
-            a_rev = (data_store[0..=i]).clone();
+            let mut a_rev = data_store.clone();
             a_rev.reverse(); 
-            r_rev = (autoc[0..=i]).clone();
-            r_rev.reverse();
+            let mut r_ss = Vec::<f64>::new();
+            for x in 0..=i{
+                let y = x as usize; 
+                r_ss.push(autoc[y+1])
+            }
+            let mut r_rev = r_ss.reverse();
             //Compute for the correction term ki+1 using a slice of the autocorrelation values and currently computed coefficients
-            let k_num = autoc[i+2] - dot(r_rev[0..=(r_rev.len()-1)], &data_store[0,i])
-            let k_den = autoc[0] - dot(&autoc[1,i], &data_store[0,i])
+            //dotproduct for knum ki+1,num = R(i+2) - dot(Rrev,ss[i,1], A[0, i))
+
+            let mut dotprod = 0.0;
+            let mut dotfacA = r_rev.clone();
+            let mut dotfacB =data_store.clone();
+            for x in 0..dotfacB.len(){
+                //let y = x as usize;
+                dotprod += &dotfacA[x] * &dotfacB[x];
+            }
+            let z = i as usize; 
+            let k_num = autoc[z+2] - dotprod;
+
+            //dot product for ki+1,den = R(0) - dot(Rss[1, i], A[0, i))
+            dotprod = 0.0;
+            dotfacB =data_store.clone();
+            let mut dotfacAB =Vec::<f64>::new();
+            if i !=0{
+                for x in 0..i{
+                    let y = x as usize;
+                    dotfacAB.push(r_ss[y+1]);
+                }
+                for x in 0..dotfacAB.len(){
+                    //let y = x as usize;
+                    dotprod += &dotfacAB[x] * &dotfacB[x];
+                }
+            }
+            let k_den = autoc[0] - dotprod;
             let k = k_num/k_den;
             //compute for updated coefficients
-            let a_prime =  Vec::<f64>>::new();
+            let a_prime =  Vec::<f64>::new();
             for x in 0..=a_rev.len(){
+                //let y = x as usize;
                 a_prime.push(data_store[x]- (k*a_rev[x]));
             }
             //append kI+1 at the end 
